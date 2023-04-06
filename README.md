@@ -314,7 +314,7 @@ This repo contains my study notes and learning projects contained in the Ohio St
 
 - ⭕️Why "Blocking and putting thread on waiting queue" is better than "yielding"?
 
-## QLocks+CV
+### QLocks+CV
 
 - Understand the code for a QLock on slide 18 (you do not need to be able to write the code, but you should be able to answer questions about how it works).
 
@@ -437,3 +437,179 @@ This repo contains my study notes and learning projects contained in the Ohio St
   - Keep state in addition to CV's
   - Always do wait/signal with lock held
   - Whenever thread wakes from waiting, recheck state
+
+### Semaphores
+
+- Be able to describe the difference between condition variables and semaphores as described on slide 11.
+
+  - Condition variables have no state (other than waiting queue) => Programmer must track additional state
+  - Semaphores have state: track integer value  
+    State cannot be directly accessed by user program, but state determines behavior of semaphore operations
+
+- Understand the three semaphore operations: allocate/initialize, wait, signal/post. Are they atomic?
+
+  - allocate & initialize
+    ```
+    sem_t sem;
+    sem_init(sem_t *s, int initval){
+      s->value = initval;
+    }
+    ```
+  - Wait/Test  
+    Waits until value of sem is > 0, then decrements sem value
+  - Signal/Increment  
+    Increment sem value, then wake a single waiter(if any waiting)
+
+  THEY ARE ATOMIC
+
+- How can thread_join and thread_exit be implemented with semaphores (slide 13)?
+
+  ```
+  sem_t s;
+  sem_init(&s, 0);
+
+  void thread_join(){
+    sem_wait(&s);
+  }
+
+  void thread_exit(){
+    sem_post(&s);
+  }
+  ```
+
+- What does it mean to say condition variable/locks and semaphores are equivalent concurrency mechanisms?  
+  Equivalence means each can be built from the other.
+
+  - Use Semaphores to build Locks
+  - Use Semaphores to build CV's
+  - Use CV/Locks to build Semaphores
+
+- How can a lock be built from a semaphore (slides 16-17)?
+
+  ```
+  typedef struct__lock_t{
+    sem_t sem;
+  }lock_t;
+
+  void init(lock_t *lock){
+    sem_init(&lock->sem, 1);
+  }
+
+  void acquire(lock_t *lock){
+    sem_wait(&lock->sem);
+  }
+
+  void release(lock_t *lock){
+    sem_post(&lock->sem);
+  }
+  ```
+
+- How can a semaphore be built from a lock and a CV (slides 19-24)?
+
+  ```
+  Typedef struct {
+    int value;
+    cond_t cond;
+    lock_t lock;
+  } sem_t;
+
+  Void sem_init(sem_t *s, int value){
+    s->value = value;
+    cond_init(&s->cond);
+    lock_init(&s->lock);
+  }
+
+  Sem_wait(sem_t *s){
+    lock_acquire(&s->lock);
+    while(s->value <= 0)
+      cond_wait(&s->cond);
+    s->value--;
+    lock_release(&s->lock);
+  }
+
+  Sem_post(sem_t *s){
+    lock_acquire(&s->lock);
+    s->value++;
+    cond_signal(&s->cond);
+    lock_release(&s->lock);
+  }
+  ```
+
+- How does the code on slide 31 work for the producer-consumer problem with a bounded buffer of size N, assuming both semaphores are initialized correctly? How could we increase the concurrency of the solution?
+
+  ```
+  Producer(){
+    sem_wait(&emptyBuffer);
+    sem_wait(&mutex);
+    myi = findempty(&buffer);
+    sem_signal(&mutex);
+    Fill(&buffer[myi]);
+    sem_signal(&fullBuffer);
+  }
+
+  Consumer(){
+    sem_wait(&fullBuffer);
+    sem_wait(&mutex);
+    myj = findfull(&buffer);
+    sem_signal(&mutex);
+    Use(&buffer[myj]);
+    sem_signal(&emptyBuffer);
+  }
+
+  ```
+
+  ⭕️We could further increase the concurrency of the solution by using different mutex for producer and consumer.
+
+- Understand the two different types of semaphores we discussed (binary semaphores versus counting semaphores). Which type is used for locks? Which type is used for the empty and full semaphores in the producer-consumer code?
+
+  - binary semaphores
+    - initialize as 0 => join
+    - initialize as 1 => lock
+  - counting semaphores
+    - producer-consumer code
+
+- Understand the version of the reader-writer problem we discussed.  
+  if a thread is reading, other threads could also read at the same time, but no one can write.  
+  if a thread is writing, other threads couldn't read/write.
+
+- Understand the code for reader-writer locks on slides 33-34.
+
+  ```
+  typedef struct_rwlock_t{
+    sem_t lock;
+    sem_t writelock;
+    int readers;
+  }rwlock_t;
+
+  void rwlock_init(rwlock_t *rw){
+    rw_>readers = 0;
+    sem_init(&rw->lock, 1);
+    sem_init(&rw->writelock, 1);
+  }
+
+  void rwlock_acquire_readlock(rwlock_t *rw){
+    sem_wait(&rw->lock);
+    rw->readers++;
+    if(rw->readers == 1)
+      sem_wait(&rw->writelock);
+    sem_post(&rw->lock);
+  }
+
+  void rwlock_release_readlock(rwlock_t *rw){
+    sem_wait(&rw->lock);
+    rw->readers--;
+    if(rw->readers == 0)
+      sem_post(&rw->writelock);
+    sem_post(&rw->lock);
+  }
+
+  void rwlock_acquire_writelock(rwlock_t *rw){
+    sem_wait(&rw->writelock);
+  }
+
+  void rwlock_release_writelock(rwlock_t *rw){
+    sem_post(&rw->writebook);
+  }
+  ```
+
+### Deadlock
