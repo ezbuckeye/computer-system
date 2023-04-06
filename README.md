@@ -346,3 +346,94 @@ This repo contains my study notes and learning projects contained in the Ohio St
   the race condition happens in a system level which cannot be mutexed by "guard lock".  
   For the race condition to occur, there should be at exactly one thread waiting.  
   The context switch take place when the waiting lock is added to the queue and the "guard lock" is set to be false(unused). And now if another thread releases the lock, since the queue is not empty now, the code will attempt to unpark the waiting thread in queue even though it has not been parked yet, which will lead to an error.
+
+- How does the code on slide 20 fix the race condition in the code on slide 18 (How does set_park() fix the race)?  
+  `setpark()` will notify the OS that the thread would park. So if the previous situation happens, the `unpark()` in releasing lock thread will not report an error && the `park()` in the same thread will not be executed since `unpark()`
+
+- When is spin-waiting or blocking better: How does it depend on whether the system has a uniprocessor or a multi-core processor?
+
+  - uniprocessor  
+    ALWAYS BLOCKING
+  - multi-core processor  
+    C: Context Switch Cost  
+    t: time before lock released
+    - BLOCK if t > C
+    - SPIN if t < C
+
+- How can a two-phase lock as described in the slides (slide 23) provide a good bound on the waiting time for a lock as compared with the optimal waiting time?  
+  We will pay at most 2C if two-phase algo is used.
+
+  - t < C => spin cost t
+  - t > C => spin cost C + block C
+
+- Be able to explain the two concurrency objectives discussed (mutual exclusion and ordering). Which can be solved with locks? Which can be solved with condition variables/semaphores?
+
+  - Mutual exculsion => LOCKS
+  - ORDERING => CONDITION VARIABLES / SEMAPHORES
+
+- Join for threads is an example of which concurrency objective?  
+  ordering
+
+- What is a condition variable? Be able to state what the two operations on condition variables do. ⭕️Are they atomic?  
+  Condition Variable: are queue of waiting thread.
+
+  - `wait(cond_t *cv, mutex_t *lock)`
+    - assumes the lock is held when wait() is called
+    - puts caller to sleep + releases the lock(atomically)
+    - when awoken, reacquires lock before returning
+  - `signal(cond_t *cv)`
+    - wake a single waiting thread(if >= 1 thread is waiting)
+    - if there is no waiting thread, just return, doing nothing
+
+- Why does the correct code for thread_join and thread_exit using condition variables on slide 34 work correctly?
+
+  ```
+  Parent:
+  void thread_join(){
+    Mutex_lock(&m);
+    if(done == 0)
+      Cond_wait(&c, &m);
+    Mutex_unlock(&m);
+  }
+
+  Child:
+  void thread_exit(){
+    Mutex_lock(&m);
+    done = 1;
+    Cond_signal(&c);
+    Mutex_unlock(&m);
+  }
+  ```
+
+- Be able to explain why the code for multiple producers and multiple consumers for the producer-consumer problem on slide 75 works correctly. If a broadcast signal is not used to wake all threads, why are two condition variables needed?
+
+  ```
+  void *producer(void *arg){
+    for(int i = 0; i < loops; i++){
+      Mutex_lock(&m);
+      while(numfull == max)
+        Cond_wait(&empty, &m);
+      do_fill(i);
+      Cond_signal(&fill);
+      Mutex_unlock(&m);
+    }
+  }
+
+  void *consumer(void *arg){
+    while(1){
+      Mutex_lock(&m);
+      while(numfull == 0)
+        Cond_wait(&fill, &m);
+      int tmp = do_get();
+      Cond_signal(&empty);
+      Mutex_unlock(&m);
+    }
+  }
+  ```
+
+  If only one CV is used, if there are multiple threads, the producer might awake another producer instead of consumer / the consumer might awake another consumer.
+
+- Know the rules of thumb for condition variables on slide 76.
+  - Keep state in addition to CV's
+  - Always do wait/signal with lock held
+  - Whenever thread wakes from waiting, recheck state
