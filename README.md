@@ -127,3 +127,12 @@ This repo contains my study notes and learning projects contained in the Ohio St
   - Make copy of code, data, stack and PCB
   - Add new PCB to ready list
   - ⭕️Any changes needed to child process?
+
+## Concurrency
+
+- What factors lead to increased concurrency in applications since about 2005?
+  Since clock speed increases, the chip dissipates more heat.(especially as circuit elements shrink in size)  
+  While exotic cooling is impractical in most modern systems, this leads to the trend of "Same speed, but multiple cores" for CPU.  
+  In order to fully utilize multiple cores, it's necessary to increase concurrency in applications to be faster.
+
+- What two options/approaches are covered in the class slides for building concurrent applications? What are the advantages and disadvantages of each approach?
