@@ -144,7 +144,7 @@ This repo contains my study notes and learning projects contained in the Ohio St
     - Cons:
       - Cumbersome programming
       - High communication overheads
-      - Expensive context switching(why?⭕️)
+      - Expensive context switching(why?⭕️ Thread context switching is cheaper)
   - Option 2: New abstraction -> thread
 
 - Name the three common programming models for multithreaded applications.
@@ -194,4 +194,33 @@ This repo contains my study notes and learning projects contained in the Ohio St
       - Higher overhead for thread operations; system calls required
       - OS must scale well with increasing number of threads
 
-- Be able to define non-deterministic behavior of programs in terms of the relationship between input and output for the same program run multiple times (Non-determinism means that the same program, run multiple times with the same input, produces different output).
+- Be able to define non-deterministic behavior of programs in terms of the relationship between input and output for the same program run multiple times  
+  Non-determinism means that the same program, run multiple times with the same input, produces different output.
+
+- What is the definition of a critical section?  
+  A block a code that should be atomic/uniterruptable, otherwise would lead to race conditions.
+
+- What does it mean for a critical section to execute atomically?  
+  The code would not be interrupted by other relevant threads.
+
+- How can races in a critical section lead to non-deterministic results if mutual exclusion is not insured?  
+  If multiple threads could get access to a critical section at the same time, the read data might be "corrupted" / the write data might be "overwrote".
+
+- What is the definition of mutual exclusion for critical sections?  
+  If thread A is in critical section C, process B can't be. (okay if other threads do unrelated work, i.e., wrok not in critical sections)
+
+- Be able to name and explain the operations for locks (allocate/initialize, acquire, release).
+  - Allocate and Initialize
+    ```
+    Pthread_mutex_t mylock = PTHREAD_MUTEX_INITIALIZER;
+    ```
+  - Acquire
+    ```
+    Pthread_mutex_lock(&mylock);
+    ```
+    wait if lock is not available
+  - Release
+    ```
+    Pthread_mutex_unlock(&mylock);
+    ```
+    release exclusive access to lock, let another process enter critical section
