@@ -268,5 +268,45 @@ This repo contains my study notes and learning projects contained in the Ohio St
   - return the old value of \*addr
 
 - Briefly explain the atomic CompareAndSwap instruction.
+
   - write newval into addr iff the old value equals to expected one
   - return the old value of \*addr
+
+- To what value is a shared lock variable initialized in order to be used for a lock with TAS or CompareAndSwap?  
+  `lock->flag = 0; /*indicates that the lock is unused*/`
+
+- How can TAS or CompareAndSwap be used to acquire a lock using busy waiting?
+
+  ```
+  /*TAS*/
+  while(xchg(&lock->flag, 1) == 1);
+
+  /*CompareAndSwap*/
+  while(CompareAndSwap(&lock->flag, 0, 1) == 1);
+  ```
+
+- How can a lock be released using TAS or CompareAndSwap?
+
+  ```
+  /*TAS or CompareAndSwap*/
+  lock-flag = 0
+  ```
+
+- What is a spinlock? ⭕️Why are basic spinlocks unfair?  
+  if a spinlock is waited by a thread, a thread will still be scheduled by Scheduler and just spin during its slice.
+
+- When can spinlocks be fast?
+
+  - many CPUs
+  - locks held a short time
+  - pro: avoid context switch
+
+- When can spinlocks be slow?
+
+  - one CPU
+  - locks held a long time
+  - con: spinning is wasteful
+
+- What is the cost/waste/loss with spinlocks both with and without yield?
+  - with yield: O(threads \* context_switch)
+  - without yield: O(threads \* time_slice)
