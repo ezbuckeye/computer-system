@@ -308,5 +308,41 @@ This repo contains my study notes and learning projects contained in the Ohio St
   - con: spinning is wasteful
 
 - What is the cost/waste/loss with spinlocks both with and without yield?
+
   - with yield: O(threads \* context_switch)
   - without yield: O(threads \* time_slice)
+
+- ⭕️Why "Blocking and putting thread on waiting queue" is better than "yielding"?
+
+## QLocks+CV
+
+- Understand the code for a QLock on slide 18 (you do not need to be able to write the code, but you should be able to answer questions about how it works).
+
+  - acquire
+    - if lock is being used:  
+      add thread to queue && block
+    - if lock is available:  
+      mark lock as true
+  - release
+    - if queue is not empty:  
+      pop out the first thread in queue into ready list
+    - if queue is empty:  
+      mark lock as false(unused)
+
+- What is the purpose of the guard member (guard lock)?  
+  give mutual exclusion to the critical section in both acquire and release function. Here the critical section is the code that contains reading/writing l->lock / queue.
+
+- Where is spin-waiting used in the implementation of the QLock? Why is using a spinlock here a reasonable approach?  
+  the "guard lock" here would spin wait if acquired by other threads.  
+  It's okay because the critical section here is short and would only last for few time.
+
+- If a thread gets the QLock and releases it while other threads are waiting in the queue for the lock, will the thread that released it be able to get the lock again during its time slice (time quantum) before the threads which are waiting can get the lock?  
+  No. When the queue is not empty, the lock will not be set to false(unused) when release as the first thread in queue would be popped out into ready list(get the lock).
+
+- If a thread which holds the lock l->lock releases it when other threads are waiting, why does it not just set l->lock to false after removing the first thread waiting in the queue from the queue and unparking it?  
+  Because now the thread that is removed gets the lock.
+
+- What is the race condition in the code on slide 18, and in what situation/case can the race occur (how many threads must be waiting, when must a context switch take place for the thread(s) that is/are waiting, and when must the lock be released for the race to occur)?  
+  the race condition happens in a system level which cannot be mutexed by "guard lock".  
+  For the race condition to occur, there should be at exactly one thread waiting.  
+  The context switch take place when the waiting lock is added to the queue and the "guard lock" is set to be false(unused). And now if another thread releases the lock, since the queue is not empty now, the code will attempt to unpark the waiting thread in queue even though it has not been parked yet, which will lead to an error.
