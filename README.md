@@ -136,6 +136,7 @@ This repo contains my study notes and learning projects contained in the Ohio St
   In order to fully utilize multiple cores, it's necessary to increase concurrency in applications to be faster.
 
 - What two options/approaches are covered in the class slides for building concurrent applications? What are the advantages and disadvantages of each approach?
+
   - Option 1: Build apps from many communicating processes
     - Pros:
       - Don't need new abstractions
@@ -145,3 +146,52 @@ This repo contains my study notes and learning projects contained in the Ohio St
       - High communication overheads
       - Expensive context switching(why?⭕️)
   - Option 2: New abstraction -> thread
+
+- Name the three common programming models for multithreaded applications.
+
+  - Producer/consumer
+  - Pipeline
+  - Defer work from background thread
+
+- What state do multiple threads which are part of the same process share (see below for more specific questions)?
+
+  - page table base register (PTBR) value
+  - address space (except stack)
+    - code
+    - heap
+  - Process ID (PID)
+  - Open file descriptors
+  - Current working directory
+  - User and group id
+
+- Do threads which are part of the same process share an instruction pointer (IP) (in other words, do their Ips hold the same value)?  
+  No, they don't. Even though they share code, but each thread may be executing different code at the same time.
+
+- Do threads which are part of the same process share a stack segment?  
+  No, they don't. Threads executing different functions (or even different instances of the same function) need different stacks.
+
+- Be able to name the three common thread operations identified in the slides, and what each operation does (and the comparable operation for processes).
+
+  - Create
+  - Exit
+  - Join (like wait() for process, but called join() for threads)
+
+- Name and understand the characteristics of the two approaches to OS support for threads in the slides (User-level thread libraries, kernel threads). What are the advantages and disadvantages of each of these approaches?
+
+  - User-level threads: Many-to-one thread mapping
+    - Pro
+      - Does not require OS support; Portable
+      - Can tune scheduliong policy to meet app demands
+      - Lower overhead thread operations since no system call for operations
+    - Con
+      - Cannot leverage multiprocessors -> no concurrent execution
+      - Entire process blocks when one thread blocks
+  - Kernel-level threads: One-to-one thread mapping
+    - Pro
+      - Each kernel-level thread can run in parallel on a multiprocessor
+      - When one thread blocks, other threads from process can still be scheduled
+    - Con
+      - Higher overhead for thread operations; system calls required
+      - OS must scale well with increasing number of threads
+
+- Be able to define non-deterministic behavior of programs in terms of the relationship between input and output for the same program run multiple times (Non-determinism means that the same program, run multiple times with the same input, produces different output).
