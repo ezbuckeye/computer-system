@@ -130,6 +130,8 @@ This repo contains my study notes and learning projects contained in the Ohio St
 
 ## Concurrency
 
+### Threads
+
 - What factors lead to increased concurrency in applications since about 2005?  
   Since clock speed increases, the chip dissipates more heat.(especially as circuit elements shrink in size)  
   While exotic cooling is impractical in most modern systems, this leads to the trend of "Same speed, but multiple cores" for CPU.  
@@ -224,3 +226,47 @@ This repo contains my study notes and learning projects contained in the Ohio St
     Pthread_mutex_unlock(&mylock);
     ```
     release exclusive access to lock, let another process enter critical section
+
+### Locks
+
+- Be able to name the lock implementation goals, and briefly explain each.
+
+  - Correctness
+    - Mutual exclusion
+    - Progress (deadlock-free)
+    - Bounded (starvation-free)  
+      Must eventually allow each waiting thread to enter
+  - Fairness  
+    Each thread waits for (roughly) same amount of time
+  - Performance  
+    CPU is not used unnecessarily (e.g., spinning)
+
+- ⭕️When can locks be implemented with interrupts? What are the disadvantages of doing this, even when it is possible? In what kinds of systems can this not be done?
+  Disadvantages:
+
+  - Process can keep control of CPU for arbitrary time
+  - Cannot perform other necessary work without interrupts
+    Undesired systems:
+  - multi-processors systems, since we cannot disable interrupts by other cores.
+
+- What is the problem with implementing a lock with load and store instructions and a shared lock variable?  
+  `while(*lock) /* wait */` is also a critical section, it will lead to the fact that multiple threads might grab the lock at the same time since Testing lock and Setting lock are not atomoic.
+
+- Briefly describe Peterson’s Algorithm for implementation of a lock
+
+  - software-based solution
+  - shared turn variable and lock array with one element for each thread.
+
+- ⭕️Why does Peterson’s Algorithm not work in modern systems
+
+  - Cache coherency
+  - different copes of a cached lock value might not have a consistent (equal) value)?
+
+- Briefly explain the atomic xchg instruction (Test-And-Set or TAS).
+
+  - write newval into addr
+  - return the old value of \*addr
+
+- Briefly explain the atomic CompareAndSwap instruction.
+  - write newval into addr iff the old value equals to expected one
+  - return the old value of \*addr
